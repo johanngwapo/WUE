@@ -34,9 +34,23 @@ public class EventEntity {
     @Column(name = "date_created")
     private LocalDateTime date_created;
 
-    @Column(name = "event_status")
+    @Transient
     @JsonProperty("eventStatus")
-    private String event_status;
+    public String getEventStatus() {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (start_datetime != null && end_datetime != null) {
+            if (now.isBefore(start_datetime)) {
+                return "Upcoming";
+            } else if (now.isAfter(end_datetime)) {
+                return "Ended";
+            } else {
+                return "Ongoing";
+            }
+        }
+
+        return "Unknown"; // Fallback if datetime values are missing
+    }
 
     @Column(name = "cover_photo")
     private String cover_photo;
@@ -115,14 +129,6 @@ public class EventEntity {
 
     public void setDateCreated(LocalDateTime dateCreated) {
         this.date_created = dateCreated;
-    }
-
-    public String getEventStatus() {
-        return event_status;
-    }
-
-    public void setEventStatus(String eventStatus) {
-        this.event_status = eventStatus;
     }
 
     public String getConfirmationStatus() {

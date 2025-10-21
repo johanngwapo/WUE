@@ -139,6 +139,15 @@ const BookTicketModal = ({ open, onClose, eventId, onUpdateTicketQuantity }) => 
                         </IconButton>
                     </Grid>
 
+                    <Box sx={{ backgroundColor: "#FFF6ED", border: "1px solid #F2C087", borderRadius: 1, p: 2, mb: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>📋 Cancellation Policy</Typography>
+                        <Typography variant="body2">
+                            <strong>• Free cancellation</strong> allowed up to <strong>72 hours</strong> before the event.<br />
+                            <strong>• Cancellation within 48 hours</strong> only permitted for emergencies with valid documentation
+                            (e.g., medical certificate, family emergency proof).
+                        </Typography>
+                    </Box>
+
                     <Grid container spacing={2} sx={{ mb: 3 }}>
                         <Grid item xs={12} md={6}>
                             <img
@@ -152,7 +161,7 @@ const BookTicketModal = ({ open, onClose, eventId, onUpdateTicketQuantity }) => 
                                 {eventDetails?.name || 'Event Name'}
                             </Typography>
                             <Typography variant="body1" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                <LocationOn sx={{ mr: 1 }} /> {eventDetails?.venue.name || 'Venue'}
+                                <LocationOn sx={{ mr: 1 }} /> {eventDetails?.venue?.name || 'Venue'}
                             </Typography>
                             <Typography variant="body1" color="textSecondary" sx={{ display: 'flex', alignItems: 'center' }}>
                                 <Event sx={{ mr: 1 }} /> {isValid(new Date(eventDetails?.endDatetime)) ? format(new Date(eventDetails.endDatetime), 'MMMM d, yyyy h:mm a') : 'Invalid Date'}

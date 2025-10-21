@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Box, Typography, Button, Grid, IconButton } from '@mui/material';
+import { Modal, Box, Typography, Button, Grid, IconButton, Tooltip } from '@mui/material';
 import { Add, Remove, Close, LocationOn, Event } from '@mui/icons-material';
 import BookingService from '../../services/BookingService';
 import TicketService from '../../services/TicketService';
@@ -8,6 +8,7 @@ import ConfirmDialog from "../ConfirmDialog.jsx";
 import { format } from 'date-fns';
 import PaymentMethodService from "../../services/PaymentMethodService.jsx";
 import { useNavigate } from 'react-router-dom';
+import CancellationModal from "./CancellationModal.jsx";
 
 import { getAuth } from "../../utils/AuthContext.jsx";
 
@@ -27,6 +28,10 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
     const [confirmCancelBookingDialogOpen, setConfirmCancelBookingDialogOpen] = useState(false);
     const [confirmCancelBookingDialogMessage, setConfirmCancelBookingDialogMessage] = useState('');
     const [paymentMethod, setPaymentMethod] = useState(null);
+    const [hoursUntilEvent, setHoursUntilEvent] = useState(null);
+    const [isWithin48Hours, setIsWithin48Hours] = useState(false);
+    const [isBetween72And48Hours, setIsBetween72And48Hours] = useState(false);
+    const [cancellationModalOpen, setCancellationModalOpen] = useState(false);
 
     useEffect(() => {
         if (open && bookingId) {
@@ -43,6 +48,19 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                 .catch(error => console.error('Error fetching booking details:', error));
         }
     }, [open, bookingId]);
+
+    useEffect(() => {
+        if (bookingDetails?.ticket?.event?.startDateTime) {
+            const now = new Date();
+            const start = new Date(bookingDetails.ticket.event.startDateTime);
+            const diffInHours = (start - now) / (1000 * 60 * 60);
+
+            setHoursUntilEvent(diffInHours);
+            setIsWithin48Hours(diffInHours <= 48);
+            setIsBetween72And48Hours(diffInHours > 48 && diffInHours <= 72);
+        }
+    }, [bookingDetails]);
+    console.log("Booking Details:", bookingDetails +"test:", isBetween72And48Hours);
 
     const handleIncrease = () => {
         if (quantity < remainingQuantity) {
@@ -72,8 +90,12 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
     };
 
     const handleCancelBooking = async () => {
-        setConfirmCancelBookingDialogMessage("Are you sure you want to cancel this booking?");
-        setConfirmCancelBookingDialogOpen(true);
+        if (isBetween72And48Hours) {
+            setCancellationModalOpen(true); // show custom modal
+        } else {
+            setConfirmCancelBookingDialogMessage("Are you sure you want to cancel this booking?");
+            setConfirmCancelBookingDialogOpen(true); // show default confirmation
+        }
     };
 
     const handleConfirmUpdate = async (confirm) => {
@@ -126,6 +148,8 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
 
     const handleConfirmPayBooking = async (confirm) => {
         setConfirmPayBookingDialogOpen(false);
+        setCancellationModalOpen(false);
+
         if (confirm) {
             if (!paymentMethod) {
                 nav('/billing');
@@ -207,7 +231,7 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                                                 {bookingDetails.ticket.event.name || 'Event Name'}
                                             </Typography>
                                             <Typography variant="body1" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                <LocationOn sx={{ mr: 1 }} /> {bookingDetails.ticket.event.venue.name || 'Venue'}
+                                                <LocationOn sx={{ mr: 1 }} /> {bookingDetails?.ticket?.event?.venue?.name || 'Venue'}
                                             </Typography>
                                             <Typography variant="body1" color="textSecondary" sx={{ display: 'flex', alignItems: 'center' }}>
                                                 <Event sx={{ mr: 1 }} /> {format(new Date(bookingDetails.ticket.event.startDateTime), 'MMMM d, yyyy h:mm a')}
@@ -308,14 +332,28 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                         <Box>
                             <Grid container spacing={2}>
                                 <Grid item xs={4}>
-                                    <Button
-                                        variant="contained"
-                                        color="error"
-                                        fullWidth
-                                        onClick={handleCancelBooking}
+                                    <Tooltip
+                                        title={
+                                            isWithin48Hours
+                                                ? 'Cancellation allowed up to 72 hours before the event and 48 hours to appeal for an emergency one.'
+                                                : ''
+                                        }
+                                        arrow
+                                        placement="top"
                                     >
-                                        CANCEL BOOKING
-                                    </Button>
+                                        {/* Wrap in span for disabled button tooltip */}
+                                        <span style={{ display: 'block' }}>
+                                        <Button
+                                            variant="contained"
+                                            color="error"
+                                            fullWidth
+                                            onClick={handleCancelBooking}
+                                            disabled={isWithin48Hours}
+                                        >
+                                            CANCEL BOOKING
+                                        </Button>
+                                    </span>
+                                    </Tooltip>
                                 </Grid>
                                 <Grid item xs={4}>
                                     <Button
@@ -368,6 +406,11 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                 onClose={handleConfirmCancelBooking}
                 message={confirmCancelBookingDialogMessage}
                 title="Confirm Cancel"
+            />
+            <CancellationModal
+                open={cancellationModalOpen}
+                onClose={() => setCancellationModalOpen(false)}
+                onConfirm={handleConfirmCancelBooking}
             />
         </div>
     );

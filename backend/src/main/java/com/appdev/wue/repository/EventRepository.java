@@ -14,7 +14,7 @@ public interface EventRepository extends JpaRepository<EventEntity, Integer> {
     @Query(value = "SELECT e FROM EventEntity e LEFT JOIN e.tickets t LEFT JOIN t.bookings b WHERE LOWER(e.confirmation_status) = LOWER('confirmed') GROUP BY e ORDER BY COUNT(b) DESC LIMIT 2")
     List<EventEntity> findTop4EventsOrderByBookingsDesc();
 
-    @Query(value = "SELECT e FROM EventEntity e WHERE e.event_status = 'Upcoming' AND LOWER(e.confirmation_status) = LOWER('confirmed') ORDER BY RAND() LIMIT 3")
+    @Query(value = "SELECT e FROM EventEntity e WHERE e.end_datetime > CURRENT_TIMESTAMP AND LOWER(e.confirmation_status) = LOWER('confirmed') ORDER BY RAND() LIMIT 3")
     List<EventEntity> getRandomUpcomingEvents();
 
     @Query("SELECT e FROM EventEntity e JOIN e.organizer o WHERE o.organizer_id = :organizerId")

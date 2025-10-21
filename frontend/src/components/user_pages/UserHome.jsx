@@ -111,7 +111,7 @@ function UserHome() {
                                                                 variant="body2"
                                                                 sx={{ paddingBottom: "15px", fontSize: "14px", whiteSpace: "normal" }}
                                                             >
-                                                                {event.venue.name}
+                                                                {event.venue?.name ?? 'No venue info'}
                                                             </Typography>
                                                             <Typography
                                                                 component="div"

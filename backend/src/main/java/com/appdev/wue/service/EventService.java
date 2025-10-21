@@ -67,7 +67,6 @@ public class EventService {
             existingEvent.setStartDatetime(updatedEvent.getStartDatetime());
             existingEvent.setEndDatetime(updatedEvent.getEndDatetime());
             existingEvent.setDateCreated(updatedEvent.getDateCreated());
-            existingEvent.setEventStatus(updatedEvent.getEventStatus());
             existingEvent.setConfirmationStatus(updatedEvent.getConfirmationStatus());
 
             if (updatedEvent.getVenue() != null && updatedEvent.getVenue().getVenueId() != 0) {

@@ -133,7 +133,7 @@ function UserViewEvent() {
             if (event.eventStatus.toLowerCase() === "ongoing") {
                 setSnackbarMessage("You can't book anymore as the event is currently happening.");
                 setOpenSnackbar(true);
-            } else if (event.eventStatus.toLowerCase() === "completed") {
+            } else if (event.eventStatus.toLowerCase() === "ended") {
                 setSnackbarMessage("You can't book anymore because the event has already happened.");
                 setOpenSnackbar(true);
             } else if (event.eventStatus.toLowerCase() === "cancelled") {
