@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Box, Card, CardContent, Typography, CardMedia, Grid } from "@mui/material";
+import { Box, Card, CardContent, Typography, CardMedia, Grid, Modal, Button } from "@mui/material";
 import { Link } from "react-router-dom";
 import UserSidebar from "./UserSidebar.jsx";
 import CustomAppBar from "../CustomAppBar.jsx";
 import EventService from "../../services/EventService.jsx";
 import { format, isToday } from 'date-fns';
-import { ArrowForward } from "@mui/icons-material";
+import { ArrowForward, InfoOutlined } from "@mui/icons-material";
 import "../styles/FontStyle.css";
 
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ function UserHome() {
 
     const [featuredEvents, setFeaturedEvents] = useState([]);
     const [upcomingEvents, setUpcomingEvents] = useState([]);
+    const [showPolicyModal, setShowPolicyModal] = useState(false);
 
     useEffect(() => {
         if(currentUser){
@@ -27,9 +28,22 @@ function UserHome() {
             }
             else if(currentUser.accountType === "admin"){
                 nav("/admin/dashboard");
+            } else {
+                // Check if user has seen the cancellation policy announcement
+                const hasSeenPolicy = sessionStorage.getItem(`policyAcknowledged_${currentUser.userId}`);
+                if (!hasSeenPolicy) {
+                    setShowPolicyModal(true);
+                }
             }
         }
-    }, []);
+    }, [currentUser, toggleOrganizer, nav]);
+
+    const handlePolicyAcknowledge = () => {
+        if (currentUser) {
+            sessionStorage.setItem(`policyAcknowledged_${currentUser.userId}`, 'true');
+        }
+        setShowPolicyModal(false);
+    };
 
     useEffect(() => {
         const fetchFeaturedEvents = async () => {
@@ -198,6 +212,76 @@ function UserHome() {
                     </Box>
                 </Box>
             </Box>
+
+            {/* Cancellation Policy Announcement Modal */}
+            <Modal
+                open={showPolicyModal}
+                onClose={() => {}} // Prevent closing by clicking backdrop
+                aria-labelledby="policy-modal-title"
+                aria-describedby="policy-modal-description"
+            >
+                <Box sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: { xs: '90%', sm: '500px' },
+                    bgcolor: 'background.paper',
+                    boxShadow: 24,
+                    borderRadius: 2,
+                    p: 4,
+                }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <InfoOutlined sx={{ fontSize: 32, color: '#1976d2', mr: 2 }} />
+                        <Typography id="policy-modal-title" variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                            New Cancellation Policy
+                        </Typography>
+                    </Box>
+                    
+                    <Typography id="policy-modal-description" sx={{ mb: 3, color: 'text.secondary' }}>
+                        Please take note of our updated event cancellation policy:
+                    </Typography>
+
+                    <Box sx={{ 
+                        bgcolor: '#f5f5f5', 
+                        p: 2.5, 
+                        borderRadius: 1, 
+                        mb: 3,
+                        border: '1px solid #e0e0e0'
+                    }}>
+                        <Box sx={{ display: 'flex', mb: 2 }}>
+                            <Typography sx={{ mr: 1, color: '#1976d2', fontWeight: 'bold' }}>•</Typography>
+                            <Typography sx={{ fontSize: '15px', lineHeight: 1.6 }}>
+                                <strong>Free cancellation</strong> allowed up to <strong>72 hours</strong> before the event.
+                            </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex' }}>
+                            <Typography sx={{ mr: 1, color: '#1976d2', fontWeight: 'bold' }}>•</Typography>
+                            <Typography sx={{ fontSize: '15px', lineHeight: 1.6 }}>
+                                <strong>Cancellation within 48 hours</strong> only permitted for emergencies with valid documentation (e.g., medical certificate, family emergency).
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    <Typography sx={{ mb: 3, fontSize: '14px', color: 'text.secondary', fontStyle: 'italic' }}>
+                        This policy helps ensure fair access to events for all students and reduces last-minute cancellations.
+                    </Typography>
+
+                    <Button 
+                        variant="contained" 
+                        fullWidth 
+                        onClick={handlePolicyAcknowledge}
+                        sx={{ 
+                            py: 1.5,
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            textTransform: 'none'
+                        }}
+                    >
+                        I Understand
+                    </Button>
+                </Box>
+            </Modal>
         </div>
     );
 }
