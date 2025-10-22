@@ -410,6 +410,7 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
             <CancellationModal
                 open={cancellationModalOpen}
                 onClose={() => setCancellationModalOpen(false)}
+                canCancelFreely={isBetween72And48Hours}
                 onConfirm={handleConfirmCancelBooking}
             />
         </div>

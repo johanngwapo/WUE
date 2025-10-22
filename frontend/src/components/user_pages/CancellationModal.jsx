@@ -17,7 +17,7 @@ export default function CancellationModal({
                                                      onClose,
                                                      onCancel,
                                                      onRequestExemption,
-                                                     canCancelFreely = true,
+                                                     canCancelFreely,
                                                      eventName = "Tech Career Fair 2025"
                                                  }) {
     const [file, setFile] = React.useState(null);
@@ -54,7 +54,7 @@ export default function CancellationModal({
                 </Box>
 
                 {/* Free cancellation or not */}
-                {canCancelFreely ? (
+                {!canCancelFreely ? (
                     <Alert severity="info" sx={{ mb: 2 }}>
                         You can cancel this registration freely as there are more than 72 hours until the event.
                     </Alert>
