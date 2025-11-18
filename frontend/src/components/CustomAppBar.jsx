@@ -38,14 +38,17 @@ function CustomAppBar({ title, newProfilePicture }) {
     };
 
     useEffect(() => {
-        if (currentUser) {
+        if (currentUser && currentUser.profilePicture) {
             UserService.getProfilePicture(currentUser.profilePicture)
                 .then((url) => {
                     setProfilePicture(url);
                     localStorage.setItem('profilePicture', url);
                 })
                 .catch(() => {
+                    setProfilePicture('/assets/placeholders/avatar-photo-placeholder.png');
                 });
+        } else {
+            setProfilePicture('/assets/placeholders/avatar-photo-placeholder.png');
         }
     }, [currentUser]);
 
@@ -116,8 +119,7 @@ function CustomAppBar({ title, newProfilePicture }) {
                                     </Menu>
                                 </>
                             ) : (
-                                <>
-                                </>
+                                <></>
                             )}
                         </Box>
                     </Toolbar>

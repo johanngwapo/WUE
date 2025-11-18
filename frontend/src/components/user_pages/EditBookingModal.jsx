@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Box, Typography, Button, Grid, IconButton, Tooltip } from '@mui/material';
-import { Add, Remove, Close, LocationOn, Event } from '@mui/icons-material';
+import { Add, Remove, Close, LocationOn, Event, CheckCircle } from '@mui/icons-material';
 import BookingService from '../../services/BookingService';
 import TicketService from '../../services/TicketService';
 import CustomSnackbar from "../CustomSnackbar.jsx";
@@ -9,11 +9,10 @@ import { format } from 'date-fns';
 import PaymentMethodService from "../../services/PaymentMethodService.jsx";
 import { useNavigate } from 'react-router-dom';
 import CancellationModal from "./CancellationModal.jsx";
-
 import { getAuth } from "../../utils/AuthContext.jsx";
 
 const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
-    const { currentUser, setCurrentUser } = getAuth();
+    const { currentUser } = getAuth();
     const nav = useNavigate();
 
     const [bookingDetails, setBookingDetails] = useState(null);
@@ -32,6 +31,7 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
     const [isWithin48Hours, setIsWithin48Hours] = useState(false);
     const [isBetween72And48Hours, setIsBetween72And48Hours] = useState(false);
     const [cancellationModalOpen, setCancellationModalOpen] = useState(false);
+    const [surveyModalOpen, setSurveyModalOpen] = useState(false);
 
     useEffect(() => {
         if (open && bookingId) {
@@ -54,13 +54,11 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
             const now = new Date();
             const start = new Date(bookingDetails.ticket.event.startDateTime);
             const diffInHours = (start - now) / (1000 * 60 * 60);
-
             setHoursUntilEvent(diffInHours);
             setIsWithin48Hours(diffInHours <= 48);
             setIsBetween72And48Hours(diffInHours > 48 && diffInHours <= 72);
         }
     }, [bookingDetails]);
-    console.log("Booking Details:", bookingDetails +"test:", isBetween72And48Hours);
 
     const handleIncrease = () => {
         if (quantity < remainingQuantity) {
@@ -91,10 +89,10 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
 
     const handleCancelBooking = async () => {
         if (isBetween72And48Hours) {
-            setCancellationModalOpen(true); // show custom modal
+            setCancellationModalOpen(true);
         } else {
             setConfirmCancelBookingDialogMessage("Are you sure you want to cancel this booking?");
-            setConfirmCancelBookingDialogOpen(true); // show default confirmation
+            setConfirmCancelBookingDialogOpen(true);
         }
     };
 
@@ -109,7 +107,6 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                 ticketQuantity: quantity,
                 totalPrice: (price * quantity).toFixed(2)
             };
-
             try {
                 await BookingService.updateBooking(bookingId, updatedData);
                 setSnackbarMessage('Successfully updated booking!');
@@ -142,7 +139,6 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                 setSnackbarOpen(true);
             }
         };
-
         await fetchPaymentMethod();
     };
 
@@ -176,6 +172,8 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                 setSnackbarOpen(true);
                 onClose();
                 onUpdateBooking();
+                // Show survey modal after successful cancellation
+                setSurveyModalOpen(true);
             } catch (error) {
                 console.error('Error cancelling booking:', error);
                 setSnackbarMessage(`Error: ${error.message || error}`);
@@ -184,12 +182,19 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
         }
     };
 
+    const handleCloseSurveyModal = () => {
+        setSurveyModalOpen(false);
+    };
+
+    const handleOpenSurvey = () => {
+        window.open('https://forms.gle/ot9YJi8Mwa4EwQq49', '_blank');
+        setSurveyModalOpen(false);
+    };
+
     const shouldHideButtons = bookingDetails?.status.toLowerCase() === 'paid' ||
         bookingDetails?.ticket.event.eventStatus.toLowerCase() === 'cancelled' ||
         bookingDetails?.ticket.event.eventStatus.toLowerCase() === 'completed' ||
         bookingDetails?.isDeleted === 1;
-
-    const isDeleted = bookingDetails?.isDeleted === 1;
 
     return (
         <div>
@@ -225,53 +230,52 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                             </Grid>
                             <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column' }}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-                                        <Box>
-                                            <Typography variant="h6" color="textPrimary" sx={{ mb: 1 }}>
-                                                {bookingDetails.ticket.event.name || 'Event Name'}
-                                            </Typography>
-                                            <Typography variant="body1" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                <LocationOn sx={{ mr: 1 }} /> {bookingDetails?.ticket?.event?.venue?.name || 'Venue'}
-                                            </Typography>
-                                            <Typography variant="body1" color="textSecondary" sx={{ display: 'flex', alignItems: 'center' }}>
-                                                <Event sx={{ mr: 1 }} /> {format(new Date(bookingDetails.ticket.event.startDateTime), 'MMMM d, yyyy h:mm a')}
-                                            </Typography>
+                                    <Box>
+                                        <Typography variant="h6" color="textPrimary" sx={{ mb: 1 }}>
+                                            {bookingDetails.ticket.event.name || 'Event Name'}
+                                        </Typography>
+                                        <Typography variant="body1" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                            <LocationOn sx={{ mr: 1 }} /> {bookingDetails?.ticket?.event?.venue?.name || 'Venue'}
+                                        </Typography>
+                                        <Typography variant="body1" color="textSecondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Event sx={{ mr: 1 }} /> {format(new Date(bookingDetails.ticket.event.startDateTime), 'MMMM d, yyyy h:mm a')}
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: 0.5 }}>
+                                        <Box
+                                            sx={{
+                                                display: 'inline-block',
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                color: '#fff',
+                                                backgroundColor:
+                                                    bookingDetails.status && bookingDetails.status.toLowerCase() === 'paid' ? '#008000' :
+                                                        '#777',
+                                                marginRight: '8px'
+                                            }}
+                                        >
+                                            {bookingDetails?.isDeleted === 1 ? 'Cancelled' : bookingDetails.status && bookingDetails.status.toLowerCase() === 'pending' ? 'Pending Payment' : bookingDetails.status.toLowerCase() === 'paid' ? 'Paid' : bookingDetails.status}
                                         </Box>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: 0.5 }}>
-                                            <Box
-                                                sx={{
-                                                    display: 'inline-block',
-                                                    padding: '2px 8px',
-                                                    borderRadius: '4px',
-                                                    color: '#fff',
-                                                    backgroundColor:
-                                                        bookingDetails.status && bookingDetails.status.toLowerCase() === 'paid' ? '#008000' :
-                                                            '#777',
-                                                    marginRight: '8px'
-                                                }}
-                                            >
-                                                {bookingDetails?.isDeleted === 1 ? 'Cancelled' : bookingDetails.status && bookingDetails.status.toLowerCase() === 'pending' ? 'Pending Payment' : bookingDetails.status.toLowerCase() === 'paid' ? 'Paid' : bookingDetails.status}                                            </Box>
-                                            <Box
-                                                sx={{
-                                                    display: 'inline-block',
-                                                    padding: '2px 8px',
-                                                    borderRadius: '4px',
-                                                    color: '#fff',
-                                                    backgroundColor:
-                                                        bookingDetails.ticket.event.eventStatus && bookingDetails.ticket.event.eventStatus.toLowerCase() === 'ongoing' ? '#FFA500' :
-                                                            bookingDetails.ticket.event.eventStatus.toLowerCase() === 'cancelled' ? '#FF0000' :
-                                                                bookingDetails.ticket.event.eventStatus.toLowerCase() === 'completed' ? '#0000FF' :
-                                                                    bookingDetails.ticket.event.eventStatus.toLowerCase() === 'upcoming' ? '#008000' :
-                                                                        '#777',
-                                                    marginRight: '8px'
-                                                }}
-                                            >
-                                                {bookingDetails.ticket.event.eventStatus && bookingDetails.ticket.event.eventStatus.toLowerCase() === 'ongoing' ? 'Ongoing' :
-                                                    bookingDetails.ticket.event.eventStatus.toLowerCase() === 'cancelled' ? 'Cancelled' :
-                                                        bookingDetails.ticket.event.eventStatus.toLowerCase() === 'completed' ? 'Completed' :
-                                                            bookingDetails.ticket.event.eventStatus.toLowerCase() === 'upcoming' ? 'Upcoming' :
-                                                                bookingDetails.ticket.event.eventStatus}
-                                            </Box>
+                                        <Box
+                                            sx={{
+                                                display: 'inline-block',
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                color: '#fff',
+                                                backgroundColor:
+                                                    bookingDetails.ticket.event.eventStatus && bookingDetails.ticket.event.eventStatus.toLowerCase() === 'ongoing' ? '#FFA500' :
+                                                        bookingDetails.ticket.event.eventStatus.toLowerCase() === 'cancelled' ? '#FF0000' :
+                                                            bookingDetails.ticket.event.eventStatus.toLowerCase() === 'completed' ? '#0000FF' :
+                                                                bookingDetails.ticket.event.eventStatus.toLowerCase() === 'upcoming' ? '#008000' :
+                                                                    '#777',
+                                                marginRight: '8px'
+                                            }}
+                                        >
+                                            {bookingDetails.ticket.event.eventStatus && bookingDetails.ticket.event.eventStatus.toLowerCase() === 'ongoing' ? 'Ongoing' :
+                                                bookingDetails.ticket.event.eventStatus.toLowerCase() === 'cancelled' ? 'Cancelled' :
+                                                    bookingDetails.ticket.event.eventStatus.toLowerCase() === 'completed' ? 'Completed' :
+                                                        bookingDetails.ticket.event.eventStatus.toLowerCase() === 'upcoming' ? 'Upcoming' :
+                                                            bookingDetails.ticket.event.eventStatus}
                                         </Box>
                                     </Box>
                                 </Box>
@@ -329,7 +333,21 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                     </Grid>
 
                     {!shouldHideButtons && (
-                        <Box>
+                        <Box sx={{ mt: 2 }}>
+                            {/* Emergency cancellation info - now above buttons */}
+                            {isWithin48Hours && bookingDetails?.ticket?.event?.organizer?.user?.email && (
+                                <Box sx={{ mb: 2, backgroundColor: "#fff8e1", p: 2, borderRadius: 2, border: "1px solid #ffe082" }}>
+                                    <Typography variant="body2" sx={{ color: "#d84315", fontWeight: "bold" }}>
+                                        Can't cancel in-app?
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mt: 1 }}>
+                                        Cancellations within <b>48 hours of the event</b> are only permitted for emergencies (e.g., medical, family).
+                                        Please email the organizer at <b>{bookingDetails.ticket.event.organizer.user.email}</b>
+                                        {" "}and attach valid documentation (e.g., doctor's note, excuse letter). The organizer will review and process your request.
+                                    </Typography>
+                                </Box>
+                            )}
+                            
                             <Grid container spacing={2}>
                                 <Grid item xs={4}>
                                     <Tooltip
@@ -341,24 +359,23 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                                         arrow
                                         placement="top"
                                     >
-                                        {/* Wrap in span for disabled button tooltip */}
                                         <span style={{ display: 'block' }}>
-                                        <Button
-                                            variant="contained"
-                                            color="error"
-                                            fullWidth
-                                            onClick={handleCancelBooking}
-                                            disabled={isWithin48Hours}
-                                        >
-                                            CANCEL BOOKING
-                                        </Button>
-                                    </span>
+                                            <Button
+                                                variant="contained"
+                                                color="error"
+                                                fullWidth
+                                                onClick={handleCancelBooking}
+                                                disabled={isWithin48Hours}
+                                            >
+                                                CANCEL BOOKING
+                                            </Button>
+                                        </span>
                                     </Tooltip>
                                 </Grid>
                                 <Grid item xs={4}>
                                     <Button
                                         variant="contained"
-                                        color="error"
+                                        color="primary"
                                         fullWidth
                                         onClick={handleUpdateBooking}
                                     >
@@ -368,7 +385,7 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                                 <Grid item xs={4}>
                                     <Button
                                         variant="contained"
-                                        color="error"
+                                        color="success"
                                         fullWidth
                                         onClick={handlePayBooking}
                                     >
@@ -380,6 +397,116 @@ const EditBookingModal = ({ open, onClose, bookingId, onUpdateBooking }) => {
                     )}
                 </Box>
             </Modal>
+
+            {/* Survey Modal */}
+            <Modal open={surveyModalOpen} onClose={handleCloseSurveyModal}>
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 450,
+                        bgcolor: 'background.paper',
+                        boxShadow: 24,
+                        borderRadius: 3,
+                        p: 4,
+                        textAlign: 'center',
+                    }}
+                >
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            mb: 2,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: 80,
+                                height: 80,
+                                borderRadius: '50%',
+                                backgroundColor: '#e8f5e9',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <CheckCircle sx={{ fontSize: 50, color: '#4caf50' }} />
+                        </Box>
+                    </Box>
+
+                    <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
+                        Thank You!
+                    </Typography>
+
+                    <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
+                        Your request has been submitted successfully.
+                    </Typography>
+
+                    <Box
+                        sx={{
+                            backgroundColor: '#e3f2fd',
+                            borderRadius: 2,
+                            p: 2.5,
+                            mb: 3,
+                            textAlign: 'left',
+                        }}
+                    >
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1.5, display: 'flex', alignItems: 'center' }}>
+                            ☕ Help us improve & get a free coffee!
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 1.5, color: 'text.secondary' }}>
+                            Please take a moment to answer our short survey about the cancellation policy.
+                        </Typography>
+                        <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                            <Typography component="li" variant="body2" sx={{ mb: 0.5, color: 'text.secondary' }}>
+                                Complete the Google Form survey
+                            </Typography>
+                            <Typography component="li" variant="body2" sx={{ mb: 0.5, color: 'text.secondary' }}>
+                                Take a screenshot of your completed survey
+                            </Typography>
+                            <Typography component="li" variant="body2" sx={{ mb: 0.5, color: 'text.secondary' }}>
+                                Email it to <strong>placeholder@email.com</strong>
+                            </Typography>
+                            <Typography component="li" variant="body2" sx={{ color: 'text.secondary' }}>
+                                Receive your free coffee voucher at Uncle Brew!
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    <Button
+                        variant="contained"
+                        fullWidth
+                        onClick={handleOpenSurvey}
+                        sx={{
+                            mb: 2,
+                            backgroundColor: '#2196f3',
+                            '&:hover': {
+                                backgroundColor: '#1976d2',
+                            },
+                            textTransform: 'none',
+                            fontWeight: 'bold',
+                            py: 1.5,
+                        }}
+                    >
+                        Open Survey Form
+                    </Button>
+
+                    <Button
+                        variant="text"
+                        fullWidth
+                        onClick={handleCloseSurveyModal}
+                        sx={{
+                            color: 'text.secondary',
+                            textTransform: 'none',
+                        }}
+                    >
+                        Close
+                    </Button>
+                </Box>
+            </Modal>
+
             <CustomSnackbar
                 open={snackbarOpen}
                 autoHideDuration={6000}
